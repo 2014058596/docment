@@ -69,4 +69,6 @@
       - 执行cluster del slot撤销故障主节点负责的槽，并执行cluster add slot把这些槽分配给自己 
       - 向集群广播自己的pong消息，表明已经替换了故障从节点
     - 进行批量操作时，建议对key进行分组，建立子集，然后通过pipeline把命令发送到对应的node上每减少网络开销
+    - 有些multi key想数据落在同一个节点上，在key里面加入{hash tag} ,{}里面字符串相同，他们可以被计算出相同的槽
+      - set userId{222} 10086
 
