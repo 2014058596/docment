@@ -1,0 +1,171 @@
+#### 安装Kafka集群
+
+- 请自行安装docker
+
+- 安装docker-compose
+
+  - ```shell
+    本文docker使用的版本为  18.09.0
+    
+    sudo curl -L https://get.daocloud.io/docker/compose/releases/download/1.25.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+    
+    
+    sudo chmod +x /usr/local/bin/docker-compose
+    ```
+
+- docker创建网络
+
+  ```
+  docker network create  --subnet=172.19.0.0/16  br17219
+  ```
+
+- 安装zookeeper集群（docker-compose.yml）
+
+  ```dockerfile
+  version: '3.4'
+  
+  services:
+    zoo1:
+      image: zookeeper:3.6.2
+      restart: always
+      hostname: zoo1
+      container_name: zoo1
+      ports:
+      - 2184:2181
+      volumes:
+      - "/root/zookeeper/zoo1/data:/data"
+      - "/root/zookeeper/zoo1/datalog:/datalog"
+      environment:
+        ZOO_MY_ID: 1
+        ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+      networks:
+        br17219:
+          ipv4_address: 172.19.0.11
+  
+    zoo2:
+      image: zookeeper:3.6.2
+      restart: always
+      hostname: zoo2
+      container_name: zoo2
+      ports:
+      - 2185:2181
+      volumes:
+      - "/root/zookeeper/zoo2/data:/data"
+      - "/root/zookeeper/zoo2//datalog:/datalog"
+      environment:
+        ZOO_MY_ID: 2
+        ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=zoo3:2888:3888;2181
+      networks:
+        br17219:
+          ipv4_address: 172.19.0.12
+  
+    zoo3:
+      image: zookeeper:3.6.2
+      restart: always
+      hostname: zoo3
+      container_name: zoo3
+      ports:
+      - 2186:2181
+      volumes:
+      - "/root/zookeeper/zoo3/data:/data"
+      - "/root/zookeeper/zoo3/datalog:/datalog"
+      environment:
+        ZOO_MY_ID: 3
+        ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888 server.3=0.0.0.0:2888:3888;2181
+      networks:
+        br17219:
+          ipv4_address: 172.19.0.13
+  
+  networks:
+    br17219:
+      external:
+        name: br17219
+  ```
+
+- 安装kafka集群
+
+  ```dockerfile
+  version: '2'
+  
+  services:
+    kafka1:
+      image: wurstmeister/kafka:2.13-2.6.0
+      restart: always
+      hostname: kafka1
+      container_name: kafka1
+      ports:
+      - 9092:9092
+      environment:
+        KAFKA_ADVERTISED_HOST_NAME: kafka1
+        KAFKA_ADVERTISED_PORT: 9092
+        KAFKA_ZOOKEEPER_CONNECT: 172.19.0.11:2181,172.19.0.12:2181,172.19.0.13:2181
+      volumes:
+      - /root/kafka/kafka1/logs:/kafka
+      external_links:
+      - zoo1
+      - zoo2
+      - zoo3
+      networks:
+        br17219:
+          ipv4_address: 172.19.0.14
+  
+    kafka2:
+      image: wurstmeister/kafka:2.13-2.6.0
+      restart: always
+      hostname: kafka2
+      container_name: kafka2
+      ports:
+      - 9093:9093
+      environment:
+        KAFKA_ADVERTISED_HOST_NAME: kafka2
+        KAFKA_ADVERTISED_PORT: 9093
+        KAFKA_ZOOKEEPER_CONNECT: 172.19.0.11:2181,172.19.0.12:2181,172.19.0.13:2181
+      volumes:
+      - /root/kafka/kafka2/logs:/kafka
+      external_links:
+      - zoo1
+      - zoo2
+      - zoo3
+      networks:
+        br17219:
+          ipv4_address: 172.19.0.15
+  
+    kafka3:
+      image: wurstmeister/kafka:2.13-2.6.0
+      restart: always
+      hostname: kafka3
+      container_name: kafka3
+      ports:
+      - 9094:9094
+      environment:
+        KAFKA_ADVERTISED_HOST_NAME: kafka3
+        KAFKA_ADVERTISED_PORT: 9094
+        KAFKA_ZOOKEEPER_CONNECT: 172.19.0.11:2181,172.19.0.12:2181,172.19.0.13:2181
+      volumes:
+      - /root/kafka/kafka3/logs:/kafka
+      external_links:
+      - zoo1
+      - zoo2
+      - zoo3
+      networks:
+        br17219:
+          ipv4_address: 172.19.0.16
+    kafdrop:
+      image: obsidiandynamics/kafdrop
+      restart: always
+      ports:
+        - "9000:9000"
+      environment:
+        KAFKA_BROKERCONNECT: "172.19.0.16:9094,172.19.0.15:9093,172.19.0.14:9092"
+      networks:
+        br17219: 
+          ipv4_address: 172.19.0.17
+  
+  networks:
+    br17219:
+      external:
+        name: br17219
+  
+        
+  ```
+
