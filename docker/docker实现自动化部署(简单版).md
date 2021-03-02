@@ -4,7 +4,7 @@
 
   - 安装Docker
   - 安装GitLab
-  - 准备一个jdk，并创建成镜像
+  - 准备一个jdk
 
 - 安装docker CI
 
